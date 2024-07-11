@@ -12,10 +12,10 @@
         <h1 class="text-4xl font-bold text-center mb-4">Weather Forecast</h1>
         <div class="flex justify-center mb-4">
             <input id="cityInput" type="text" class="p-2 border border-gray-300 rounded-l" placeholder="Enter city name">
-            <button class="p-2 bg-blue-500 text-white rounded-r">Get Weather</button>
+            <button onclick="getWeatherByCity()"  class="p-2 bg-blue-500 text-white rounded-r">Get Weather</button>
         </div>
         <div class="flex justify-center mb-4">
-            <button class="p-2 bg-green-500 text-white rounded">Get Weather by Current Location</button>
+            <button onclick="getWeatherByLocation()" class="p-2 bg-green-500 text-white rounded">Get Weather by Current Location</button>
         </div>
         <div id="weatherContainer" class="text-center">
         </div>
