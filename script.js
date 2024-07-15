@@ -3,16 +3,13 @@ const apiKey = 'f31a29649fdb81b6b9968f1ad2db732d';
 // event listener for when the DOM content is fully loaded
 document.addEventListener('DOMContentLoaded', loadRecentCities);
 
-// function to load recent cities from localStorage
+// Function to load recent cities from localStorage
 function loadRecentCities() {
-    // gets recent cities from localStorage or initialize an empty array if none found
     const recentCities = JSON.parse(localStorage.getItem('recentCities')) || [];
     const recentCitiesDropdown = document.getElementById('recentCities');
-    
-    // hides dropdown if no there are no searched cities
+
     recentCitiesDropdown.style.display = 'none';
     if (recentCities.length > 0) {
-        // populates dropdown with searched cities
         recentCitiesDropdown.innerHTML = '<option value="" disabled selected>Select a recent city</option>';
         recentCities.forEach(city => {
             const option = document.createElement('option');
@@ -20,11 +17,9 @@ function loadRecentCities() {
             option.textContent = city;
             recentCitiesDropdown.appendChild(option);
         });
-
-        // shows dropdown if recent cities are available
         recentCitiesDropdown.style.display = 'block';
     } else {
-        console.log('No searched cities found.');
+        console.log('No recent cities found.');
     }
 }
 
@@ -32,9 +27,7 @@ function loadRecentCities() {
 function updateRecentCities(city) {
     let recentCities = JSON.parse(localStorage.getItem('recentCities')) || [];
     if (!recentCities.includes(city)) {
-        // add new city to the beginning of the array
         recentCities.unshift(city);
-        // limit to 5 recent cities
         if (recentCities.length > 5) {
             recentCities.pop();
         }
@@ -51,19 +44,24 @@ document.getElementById('recentCities').addEventListener('change', function () {
 
 // function to fetch weather data by city name
 function getWeatherByCity(city = null) {
-    // uses the provided city or get it from the input field
     city = city || document.getElementById('cityInput').value;
     if (city) {
-        // validates city name (letters and spaces only)
-        if (!/^[a-zA-Z\s]+$/.test(city)) {
-            alert('Please enter a valid city name');
-            return;
-        }
-        updateRecentCities(city);
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
-        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
-        fetchWeatherData(weatherUrl);
-        fetchForecastData(forecastUrl);
+        fetchWeatherDataByCity(city)
+            .then(isValid => {
+                if (isValid) {
+                    updateRecentCities(city);
+                    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+                    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
+                    fetchWeatherData(weatherUrl);
+                    fetchForecastData(forecastUrl);
+                } else {
+                    alert('Please enter a valid city name');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking city validity:', error);
+                alert('Error checking city validity. Please try again.');
+            });
     } else {
         alert('Please enter a city name');
     }
@@ -98,6 +96,7 @@ function fetchWeatherData(url) {
         })
         .then(data => {
             const weatherContainer = document.getElementById('weatherContainer');
+            const weatherIcon = getWeatherIcon(data.weather[0].id);
             weatherContainer.innerHTML = `
                 <div class="weather-container flex flex-col items-center bg-teal-100 p-4 rounded shadow-lg">
                     <div class="weather-box flex flex-col p-5">
@@ -147,7 +146,7 @@ function fetchForecastData(url) {
             header.className = 'text-2xl font-bold mb-4 my-10 text-center';
             header.textContent = '5-Day Forecast';
             forecastContainer.appendChild(header);
-            
+
             const forecastRow = document.createElement('div');
             forecastRow.style.display = 'flex';
             forecastRow.style.flexDirection = 'row';
@@ -187,7 +186,6 @@ function fetchForecastData(url) {
 
 // function to map weather condition IDs to icon class names
 function getWeatherIcon(weatherId) {
-    // object to map the first digit of weather ID to corresponding icon class names
     const weatherIcons = {
         '2': 'wi-thunderstorm', 
         '3': 'wi-sprinkle', 
@@ -196,10 +194,28 @@ function getWeatherIcon(weatherId) {
         '7': 'wi-fog', 
         '8': 'wi-day-sunny', 
         '80': 'wi-cloudy', 
-        '90': 'wi-rain-mix' 
+        '90': 'wi-rain-mix'
     };
-
-    // convert weatherId to string and get the first character
-    // return the corresponding icon class or a default 'wi-day-sunny' if not found
+      // convert weatherId to string and get the first character
+     // return the corresponding icon class or a default 'wi-day-sunny' if not found
     return weatherIcons[String(weatherId).charAt(0)] || 'wi-day-sunny';
 }
+
+// function to fetch weather data by city name and validate its existence
+async function fetchWeatherDataByCity(city) {
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+
+    try {
+        const response = await fetch(weatherUrl);
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data && data.weather && data.weather.length > 0;
+    } catch (error) {
+        console.error('Error fetching weather data:', error);
+        return false;
+    }
+}
+
+
